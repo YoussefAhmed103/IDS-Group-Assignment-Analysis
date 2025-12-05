@@ -56,6 +56,12 @@ ldc_growth <- comb_growth %>%
 ldc_gap <- ldc_growth %>%
   mutate(gap_to_target = mean_growth - 7)
 
-
+#Plotting graphs only involving given data sets
+ggplot(cont_growth, aes(x = year, y = mean_growth, color = continent)) +
+  geom_line(linewidth = 0.7, alpha = 0.85) + geom_point(size = 1.3, alpha = 0.9) +
+  labs(title = "GDP Per Capita Growth Across Continents", x = "Year", y = "Average Growth (%)",color = "Continent") +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "bottom", panel.grid.minor = element_blank()
+  )
 
 
