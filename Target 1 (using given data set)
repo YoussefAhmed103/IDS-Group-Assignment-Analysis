@@ -1,0 +1,61 @@
+#Installing the neccessary packages
+library(tidyverse)
+library(janitor)
+library(ggplot2)
+
+#Loading and cleansing data sets
+continents <- read.csv("continents-according-to-our-world-in-data.csv") %>% clean_names()
+gdp <- read.csv("gdp-per-capita-worldbank.csv") %>% clean_names()
+
+names (gdp)
+head(gdp)
+
+# Combining data sets
+comb_gdp <- gdp %>%
+  select(entity, code, year,gdp_per_capita_ppp_constant_2017_international) %>%
+  left_join(continents %>% select(code, continent),by = "code")
+
+#Filtering
+
+comb_gdp <- comb_gdp %>%
+filter(!entity %in% c("Low-income countries", "World", "High-income countries",
+                      "Upper-middle-income countries", "Lower-middle-income countries"))
+
+
+
+# Using per capita threshold to hihglight LDCs
+comb_gdp <- comb_gdp %>%
+  mutate(ldc = if_else(gdp_per_capita_ppp_constant_2017_international < 1400,"LDC Countries", "Non-LDC Countries" ))
+
+comb_gdp <- comb_gdp %>%
+  select(entity, code, year, continent,gdp_per_capita_ppp_constant_2017_international,ldc)
+
+
+# Computation of GDP per capita growth
+comb_growth <- comb_gdp %>%
+  group_by(entity) %>%
+  arrange(year) %>%
+  mutate(growth_rate = (gdp_per_capita_ppp_constant_2017_international -lag(gdp_per_capita_ppp_constant_2017_international)) /lag(gdp_per_capita_ppp_constant_2017_international) * 100
+  ) %>%
+  ungroup()
+
+# GDP growth (continents)
+cont_growth <- comb_growth %>%
+  group_by(continent, year) %>%
+  summarise(mean_growth = mean(growth_rate, na.rm = TRUE)) %>%
+  ungroup()
+
+#GDP growth LDC 
+ldc_growth <- comb_growth %>% 
+  filter(ldc == "LDC Countries") %>%
+  group_by(continent, year) %>%
+  summarise(mean_growth = mean(growth_rate, na.rm = TRUE)) %>%
+  ungroup()
+  
+# 7% growth target
+ldc_gap <- ldc_growth %>%
+  mutate(gap_to_target = mean_growth - 7)
+
+
+
+
