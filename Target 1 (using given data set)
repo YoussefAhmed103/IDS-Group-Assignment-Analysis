@@ -1,4 +1,4 @@
-# Installing the neccessary packages
+# Installing the necessary packages
 library(tidyverse)
 library(janitor)
 library(ggplot2)
