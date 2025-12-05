@@ -1,13 +1,13 @@
-#Installing the neccessary packages
+# Installing the neccessary packages
 library(tidyverse)
 library(janitor)
 library(ggplot2)
 
-#Loading and cleansing data sets
+# Loading and cleansing data sets
 continents <- read.csv("continents-according-to-our-world-in-data.csv") %>% clean_names()
 gdp <- read.csv("gdp-per-capita-worldbank.csv") %>% clean_names()
 
-names (gdp)
+names(gdp)
 head(gdp)
 
 # Combining data sets
@@ -15,7 +15,7 @@ comb_gdp <- gdp %>%
   select(entity, code, year,gdp_per_capita_ppp_constant_2017_international) %>%
   left_join(continents %>% select(code, continent),by = "code")
 
-#Filtering
+# Filtering
 
 comb_gdp <- comb_gdp %>%
 filter(!entity %in% c("Low-income countries", "World", "High-income countries",
@@ -45,7 +45,7 @@ cont_growth <- comb_growth %>%
   summarise(mean_growth = mean(growth_rate, na.rm = TRUE)) %>%
   ungroup()
 
-#GDP growth LDC 
+# GDP growth LDC 
 ldc_growth <- comb_growth %>% 
   filter(ldc == "LDC Countries") %>%
   group_by(continent, year) %>%
