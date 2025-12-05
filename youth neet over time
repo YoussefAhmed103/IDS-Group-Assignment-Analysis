@@ -1,0 +1,124 @@
+# The following codes are for Target 2: By 2020, substantially reduce the proportion of youth not in employment, education or training.
+#------------------------------------------------------------------
+### Task 1: Plotting a map graph for youth neet across countries over time
+#------------------------------------------------------------------
+# setting up by loading up required libraries
+library(plotly)
+library(dplyr)
+library(readr)
+library(tidyverse)
+setwd("/Users/annabel/Library/Mobile Documents/com~apple~CloudDocs/efds 2526/modules/introduction to data science/coursework/data sets")
+
+#loading the data sets
+continents_data <- read.csv("continents-according-to-our-world-in-data.csv")
+youth_neet <- read.csv("youth-not-in-education-employment-training.csv")
+
+#clean the continents data set
+#rename columns to consistent, simpler variable names
+continents_clean <- continents_data %>%
+  rename(
+    country = Entity,
+    code = Code, 
+    continent = Continent
+  )
+head(continents_clean) 
+
+#clean the youth neet data set
+#Rename columns and simplify the long NEET variable name
+youth_neet_clean <- youth_neet %>%
+  rename(
+    country = Entity,
+    code = Code,
+    year = Year,
+    neet = Share.of.youth.not.in.education..employment.or.training..total....of.youth.population.
+  )
+head(youth_neet_clean)
+
+# Join both datasets by country code (ISO3)
+# This adds continent information to each NEET observation
+neet_joined <- youth_neet_clean %>%
+  left_join(continents_clean, by = "code")
+view(neet_joined)
+
+#cleaning up after the join (getting rid of duplicate columns)
+neet_filtered <- neet_joined %>%
+  select(country = country.x, code, year, neet, continent) %>%
+  filter(!is.na(continent), continent != "Antarctica")
+view(neet_filtered)
+
+#_____________________________________________________________________________
+# Create animated world NEET choropleth map
+# Uses Plotly's geographic mapping
+# Colours range from green (low NEET) to red (high NEET) to emphasise neet scores across countries
+# Animation frames move by year through slider
+
+neet_map <- plot_geo(neet_filtered, 
+                     locationmode = 'ISO-3', # This tells map to use ISO3 country codes
+                     frame = ~year # animation frames are based by year
+                     ) %>%
+  add_trace(
+    locations = ~code, #ISO3 codes for mapping
+    z = ~neet,  # values to color countries by
+    zmin = min(neet_filtered$neet, na.rm = TRUE), #setting the scale of the lower bound
+    zmax = max(neet_filtered$neet, na.rm = TRUE), # setting the scale of the upper bound
+    colorscale = list(
+      c(0, 'limegreen'),  
+      c(1, 'red')         # vivid colors to emphasise difference across countries
+    ), 
+    color = ~neet, #ensuring colors based on NEET
+    text = ~paste(
+      country,
+      "<br>Continent:", continent,
+      "<br>NEET:", neet, "%"
+    ),
+    hoverinfo = 'text', # so the country info can be shown when hovering over them
+    marker = list(line = list(color = 'black', width = 0.5))
+    ) %>%
+  layout(
+  title = list(
+    text = "Youth NEET (%) Across the World Over Time <br><sup>NEET = Not in Education, Employment, or Training</sup>",
+    font = list(size = 20, color = 'black'),
+    y = 0.9) # moves the title of the graph slightly down
+)
+
+plot(neet_map)
+
+#------------------------------------------------------------------
+### Task 2: Plotting a graph to show youth neet by continent over time
+#------------------------------------------------------------------
+#loading the necessary libraries
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+
+#setting up the working directory
+setwd("/Users/annabel/Library/Mobile Documents/com~apple~CloudDocs/efds 2526/modules/introduction to data science/coursework/data sets")
+
+#loading the data sets
+continents_data <- read.csv("continents-according-to-our-world-in-data.csv")
+youth_neet <- read.csv("youth-not-in-education-employment-training.csv")
+
+# I am proceeding with simple mean, instead of weighted mean, as I don't have information on population data.
+continent_colors <- c(
+  "Africa" = "#FFA500",
+  "Asia" = "#FF0000",
+  "Europe" = "#de73ff",
+  "North America" = "#f64a8a",
+  "Oceania" = "#0496c7",
+  "South America" = "#c7ea46"
+)
+
+neet_plot <- ggplot(neet_by_continent, aes(x = year, y = neet, colour = continent)) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 1.5) +
+  scale_colour_manual(values = continent_colors) +
+  theme_minimal() +
+  labs(
+    title = "Youth NEET (%) Over Time by Continent",
+    subtitle = "NEET = Not in Education, Employment, or Training",
+    x = "Year",
+    y = "NEET (%)",
+    colour = "Continent"
+  )
+
+plot(neet_plot)
