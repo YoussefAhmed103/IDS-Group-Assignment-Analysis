@@ -1,6 +1,6 @@
 # The following codes are for Target 2: By 2020, substantially reduce the proportion of youth not in employment, education or training.
 #------------------------------------------------------------------
-### Task 1: Plotting a map graph for youth neet across countries over time
+### Task 1: Plotting a map graph for youth NEET across countries over time
 #------------------------------------------------------------------
 # setting up by loading up required libraries
 library(plotly)
@@ -81,23 +81,12 @@ neet_map <- plot_geo(neet_filtered,
     y = 0.9) # moves the title of the graph slightly down
 )
 
-plot(neet_map)
+#plotting the animated map graph: 
+neet_map
 
 #------------------------------------------------------------------
 ### Task 2: Plotting a graph to show youth neet by continent over time
 #------------------------------------------------------------------
-#loading the necessary libraries
-library(tidyverse)
-library(ggplot2)
-library(dplyr)
-
-#setting up the working directory
-setwd("/Users/annabel/Library/Mobile Documents/com~apple~CloudDocs/efds 2526/modules/introduction to data science/coursework/data sets")
-
-#loading the data sets
-continents_data <- read.csv("continents-according-to-our-world-in-data.csv")
-youth_neet <- read.csv("youth-not-in-education-employment-training.csv")
-
 # I am proceeding with simple mean, instead of weighted mean, as I don't have information on population data.
 continent_colors <- c(
   "Africa" = "#FFA500",
@@ -107,6 +96,10 @@ continent_colors <- c(
   "Oceania" = "#0496c7",
   "South America" = "#c7ea46"
 )
+
+neet_by_continent <- neet_filtered %>%
+  group_by(continent, year) %>%
+  summarise(neet = mean(neet, na.rm = TRUE))
 
 neet_plot <- ggplot(neet_by_continent, aes(x = year, y = neet, colour = continent)) +
   geom_line(linewidth = 0.7) +
