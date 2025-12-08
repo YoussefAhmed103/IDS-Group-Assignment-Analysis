@@ -1,0 +1,15 @@
+#Plot 1
+ldc_growth <- comb_growth2 %>%
+filter(ldc == "LDC Countries") %>%
+group_by(continent, year) %>%
+summarise(mean_growth = mean(growth_rate, na.rm = TRUE)) %>%
+ungroup()
+ldc_gap <- ldc_growth %>%
+mutate(gap_to_target = mean_growth - 7)
+ggplot(ldc_gap, aes(x = year, y = gap_to_target, fill = continent)) + geom_col(alpha = 0.9) +
+geom_hline(yintercept = 0, color = "black", linetype = "dashed", linewidth = 1) +
+labs( title = "LDC Countries- Contribution of Each Continent to Gap From Target", subtitle =
+"Stacked bars show how continents push total LDC growth above or below 7%", x = "Year", y
+= "Gap to Target (percentage points)", fill = "Continent" ) +
+theme_minimal(base_size = 14) +
+theme( legend.position = "bottom", panel.grid.minor = element_blank() )
