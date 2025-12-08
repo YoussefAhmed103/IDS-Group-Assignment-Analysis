@@ -70,3 +70,37 @@ ldc_growth <- comb_growth2 %>%
 ldc_gap <- ldc_growth %>%
   mutate(gap_to_target = mean_growth - 7)
 
+
+#Plot 2
+income_stats <- comb_growth2 %>%
+  group_by(income_group) %>%
+  summarise(avg_growth = mean(growth_rate, na.rm = TRUE), volatility = sd(growth_rate, na.rm = TRUE), .groups = "drop" )
+
+scale_factor <- max(income_stats$avg_growth, na.rm = TRUE) /
+  max(income_stats$volatility, na.rm = TRUE)
+
+ggplot(income_stats, aes(x = income_group)) +
+  geom_col(aes(y = avg_growth, fill = income_group), alpha = 0.8) +
+  geom_line(aes(y = volatility * scale_factor, group = 1), color = "black", linewidth = 0.7) +
+  geom_point(aes(y = volatility * scale_factor),color = "black", size = 3) +
+  scale_y_continuous( name = "Average GDP Per Capita Growth (%)", sec.axis = sec_axis(~ . / scale_factor, name = "Volatility (Std Dev)")) +
+  labs( title = "Growth vs Volatility Across Income Groups", subtitle = "Bars = average growth | Line = volatility (dual axis)", x = "Income Group", fill = "Income Group") +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "none")
+
+#PLOT 4
+inc_group <- comb_growth2 %>%
+  filter(!is.na(income_group), !is.na(continent)) %>%
+  group_by(income_group, year) %>%
+  summarise(mean_growth = mean(growth_rate, na.rm = TRUE), .groups = "drop")
+
+ggplot(inc_group, aes(x = year, y = mean_growth)) +
+  geom_line(linewidth = 0.7, color = "black") +
+  geom_point(size = 0.7, color = "black", alpha = 0.85) +
+  geom_hline(yintercept = 7, linetype = "dashed", color = "red", linewidth = 0.7) +
+  facet_wrap(~ income_group, ncol = 2, scales = "free_y") +
+  labs(title = "GDP Per Capita Growth by Income Classification", subtitle = "Red dashed line marks the 7% SDG target for Low income countries", x = "Year", y = "Average Growth (%)") +
+  theme_minimal(base_size = 14) 
+
+
+
