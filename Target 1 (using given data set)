@@ -4,8 +4,8 @@ library(janitor)
 library(ggplot2)
 
 #Loading and cleansing data sets
-continents <- read.csv("continents-according-to-our-world-in-data.csv") %>% clean_names()
-gdp <- read.csv("gdp-per-capita-worldbank.csv") %>% clean_names()
+continents <- read.csv("data sets/continents-according-to-our-world-in-data.csv") %>% clean_names()
+gdp <- read.csv("data sets/gdp-per-capita-worldbank.csv") %>% clean_names()
 
 names (gdp)
 head(gdp)
@@ -39,7 +39,7 @@ ggplot(cont_growth, aes(x = year, y = mean_growth, color = continent)) +
 
 #Combining everything with new data set
 
-income <- read.csv("CLASS_2025_10_07(in).csv") %>% clean_names()
+income <- read.csv("data sets/CLASS_2025_10_07.csv") %>% clean_names()
 
 comb_gdp2 <- comb_gdp %>%
   left_join(income %>% select(code, income_group, lending_category), by = "code")
@@ -72,20 +72,67 @@ ldc_gap <- ldc_growth %>%
 
 #Plot 1
 ldc_growth <- comb_growth2 %>%
-filter(ldc == "LDC Countries") %>%
-group_by(continent, year) %>%
-summarise(mean_growth = mean(growth_rate, na.rm = TRUE)) %>%
-ungroup()
-ldc_gap <- ldc_growth %>%
-mutate(gap_to_target = mean_growth - 7)
-ggplot(ldc_gap, aes(x = year, y = gap_to_target, fill = continent)) + geom_col(alpha = 0.9) +
-geom_hline(yintercept = 0, color = "black", linetype = "dashed", linewidth = 1) +
-labs( title = "LDC Countries- Contribution of Each Continent to Gap From Target", subtitle =
-"Stacked bars show how continents push total LDC growth above or below 7%", x = "Year", y
-= "Gap to Target (percentage points)", fill = "Continent" ) +
-theme_minimal(base_size = 14) +
-theme( legend.position = "bottom", panel.grid.minor = element_blank() )
+  filter(ldc == "LDC Countries") %>%
+  group_by(continent, year) %>%
+  summarise(mean_growth = mean(growth_rate, na.rm = TRUE)) %>%
+  ungroup()
 
+ldc_gap <- ldc_growth %>%
+  mutate(gap_to_target = mean_growth - 7)
+
+p1 <- ggplot(ldc_gap, aes(x = year, y = gap_to_target, fill = continent)) + 
+  
+  geom_col(alpha = 0.9) +
+  
+  geom_hline(yintercept = 0, color = "black", linetype = "dashed", linewidth = 1) +
+  
+  labs(title = "Contribution of Each Continent to Gap From 7% GDP Per Capita Growth Target (LDC Countries)", 
+       subtitle = "█ Continent Contribution to Total LDC Growth towards Target", 
+       x = "Year", 
+       y = "Target Deviation (in %)", fill = "Continent") +
+
+  theme(legend.position = "bottom", panel.grid.minor = element_blank()) + 
+  
+  theme_minimal(13) +
+  
+  theme(
+    plot.background = element_rect(
+      fill = "#F9F9F9", color = NA
+    ), 
+    panel.background = element_rect(
+      fill = "#FFFFFF", color = NA
+    ),
+    panel.grid.major = element_line(
+      color = "#D9D9D9", size = 0.5
+    ),
+    panel.grid.minor = element_line(
+      color = "#EFEFEF", size = 0.25
+    ),
+    plot.title = element_text(
+      size = 11, face = "bold", hjust = 0.5
+    ),
+    plot.subtitle = element_text(
+      size = 10, face = "bold", hjust = 0.5
+    ),
+    plot.caption = element_text(
+      size = 7, hjust = 0
+    ),
+    axis.title.y = element_text(
+      size = 11, face = "bold"
+    ),
+    axis.title.x = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.position = "right",
+    legend.title = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.text = element_text(
+      size = 11
+    ) 
+  )
+
+plot(p1)
 
 #Plot 2
 income_stats <- comb_growth2 %>%
@@ -95,14 +142,134 @@ income_stats <- comb_growth2 %>%
 scale_factor <- max(income_stats$avg_growth, na.rm = TRUE) /
   max(income_stats$volatility, na.rm = TRUE)
 
-ggplot(income_stats, aes(x = income_group)) +
+p2 <- ggplot(income_stats 
+             %>% filter(!is.na(income_group)) %>% 
+                          filter(income_group != ""),
+             aes(x = income_group)) +
+  
   geom_col(aes(y = avg_growth, fill = income_group), alpha = 0.8) +
-  geom_line(aes(y = volatility * scale_factor, group = 1), color = "black", linewidth = 0.7) +
+  
+  geom_line(aes(y = volatility * scale_factor, group = 1), 
+            color = "black", linewidth = 0.7) +
+  
   geom_point(aes(y = volatility * scale_factor),color = "black", size = 3) +
-  scale_y_continuous( name = "Average GDP Per Capita Growth (%)", sec.axis = sec_axis(~ . / scale_factor, name = "Volatility (Std Dev)")) +
-  labs( title = "Growth vs Volatility Across Income Groups", subtitle = "Bars = average growth | Line = volatility (dual axis)", x = "Income Group", fill = "Income Group") +
-  theme_minimal(base_size = 14) +
+  
+  scale_y_continuous(
+    name = "Average GDP Per Capita Growth (%)", 
+    sec.axis = sec_axis(~ . / scale_factor, name = "Volatility (Standard Deviation)")) +
+  
+  labs(title = "National Income Growth and Volatility Across Income Groups", 
+        subtitle = "█ Average National Income Growth   — Volatility", 
+        x = "Income Group", fill = "Income Group") +
+  theme_minimal(13) +
+  
+  theme(
+    plot.background = element_rect(
+      fill = "#F9F9F9", color = NA
+    ), 
+    panel.background = element_rect(
+      fill = "#FFFFFF", color = NA
+    ),
+    panel.grid.major = element_line(
+      color = "#D9D9D9", size = 0.5
+    ),
+    panel.grid.minor = element_line(
+      color = "#EFEFEF", size = 0.25
+    ),
+    plot.title = element_text(
+      size = 12, face = "bold", hjust = 0.5
+    ),
+    plot.subtitle = element_text(
+      size = 10, face = "bold", hjust = 0.5
+    ),
+    plot.caption = element_text(
+      size = 7, hjust = 0
+    ),
+    axis.title.y = element_text(
+      size = 11, face = "bold"
+    ),
+    axis.title.x = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.position = "right",
+    legend.title = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.text = element_text(
+      size = 11
+    ) 
+  ) +
+  
   theme(legend.position = "none")
+
+plot(p2)
+
+#Plot 3
+group_growth <- comb_growth2 %>%
+  group_by(continent, year, ldc) %>%
+  summarise(weighted_growth = weighted.mean(growth_rate, na.rm = TRUE), 
+            .groups = "drop")
+
+cont_total_growth <- group_growth %>% 
+  filter(!is.na(continent)) %>%
+  group_by(continent, year) %>%
+  summarise(total_growth = sum(weighted_growth, na.rm = TRUE), .groups = "drop")
+
+p3 <- ggplot(group_growth %>% filter(!is.na(continent)), 
+             aes(x = year, y = weighted_growth, fill = ldc)) +
+  
+  geom_col(alpha = 0.85) +
+  
+  geom_line(data = cont_total_growth, 
+            aes(x = year, y = total_growth, group = continent), 
+            color = "black", linewidth = 1.1, inherit.aes = FALSE) + 
+  
+  facet_wrap(~ continent, scales = "free_y") +
+  
+  labs(title = "Contribution of LDCs and Non-LDCs to GDP Per Capita Growth", 
+       subtitle = "█ Country Group Growth Rate   — Total Growth Rate", 
+       x = "Year", y = "Contribution (%)", fill = "Country Group") +
+
+theme_minimal(13) +
+  
+  theme(
+    plot.background = element_rect(
+      fill = "#F9F9F9", color = NA
+    ), 
+    panel.background = element_rect(
+      fill = "#FFFFFF", color = NA
+    ),
+    panel.grid.major = element_line(
+      color = "#D9D9D9", size = 0.5
+    ),
+    panel.grid.minor = element_line(
+      color = "#EFEFEF", size = 0.25
+    ),
+    plot.title = element_text(
+      size = 12, face = "bold", hjust = 0.5
+    ),
+    plot.subtitle = element_text(
+      size = 10, face = "bold", hjust = 0.5
+    ),
+    plot.caption = element_text(
+      size = 7, hjust = 0
+    ),
+    axis.title.y = element_text(
+      size = 11, face = "bold"
+    ),
+    axis.title.x = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.position = "right",
+    legend.title = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.text = element_text(
+      size = 11
+    ) 
+  )
+
+plot(p3)
 
 #PLOT 4
 inc_group <- comb_growth2 %>%
@@ -110,13 +277,57 @@ inc_group <- comb_growth2 %>%
   group_by(income_group, year) %>%
   summarise(mean_growth = mean(growth_rate, na.rm = TRUE), .groups = "drop")
 
-ggplot(inc_group, aes(x = year, y = mean_growth)) +
+p4 <- ggplot(inc_group, aes(x = year, y = mean_growth)) +
+  
   geom_line(linewidth = 0.7, color = "black") +
+  
   geom_point(size = 0.7, color = "black", alpha = 0.85) +
+  
   geom_hline(yintercept = 7, linetype = "dashed", color = "red", linewidth = 0.7) +
+  
   facet_wrap(~ income_group, ncol = 2, scales = "free_y") +
-  labs(title = "GDP Per Capita Growth by Income Classification", subtitle = "Red dashed line marks the 7% SDG target for Low income countries", x = "Year", y = "Average Growth (%)") +
-  theme_minimal(base_size = 14) 
+  
+  labs(title = "GDP Per Capita Growth by Income Classification", x = "Year", 
+    y = "Average Growth (in %)") +
+  
+  geom_text(aes(label = 'UN SDG 7% LIC Target (2020) ', x = 2020, y = 15), 
+    colour = 'red', size = 2.5, hjust = 1) +
+  
+  theme_minimal(13) +
+  
+  theme(
+    plot.background = element_rect(
+      fill = "#F9F9F9", color = NA
+    ), 
+    panel.background = element_rect(
+      fill = "#FFFFFF", color = NA
+    ),
+    panel.grid.major = element_line(
+      color = "#D9D9D9", size = 0.5
+    ),
+    panel.grid.minor = element_line(
+      color = "#EFEFEF", size = 0.25
+    ),
+    plot.title = element_text(
+      size = 12, face = "bold", hjust = 0.5
+    ),
+    plot.caption = element_text(
+      size = 7, hjust = 0
+    ),
+    axis.title.y = element_text(
+      size = 11, face = "bold"
+    ),
+    axis.title.x = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.position = "right",
+    legend.title = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.text = element_text(
+      size = 11
+    ) 
+  )
 
-
+plot(p4)
 
