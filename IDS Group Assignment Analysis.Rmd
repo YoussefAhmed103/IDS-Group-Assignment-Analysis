@@ -101,7 +101,8 @@ Kosovo's Country Name coressponds across the data frames while its Country Code 
 ```{r primary key replacement}
 youth_neet$Code <- recode(youth_neet$Code, 'OWID_KOS' = 'XKX')
 
-continents_data_essential$Code <- recode(continents_data_essential$Code, 'OWID_KOS' = 'XKX')
+continents_data_essential$Code <- recode(continents_data_essential$Code, 
+                                         'OWID_KOS' = 'XKX')
 ```
 
 ### Joining Datasets
@@ -121,7 +122,11 @@ Specific column variables are required throughout this data analysis, hence the 
 ```{r data selecting 2, message=FALSE, warning=FALSE}
 youth_neet_essential <- youth_neet_classification %>% 
   select(
-  Entity, Code, Year, Share.of.youth.not.in.education..employment.or.training..total....of.youth.population., Income.group
+  Entity, 
+  Code, 
+  Year, 
+  Share.of.youth.not.in.education..employment.or.training..total....of.youth.population., 
+  Income.group
   )
 ```
 
@@ -131,7 +136,8 @@ The 'youth_essential' and 'continents_data_essential' data frames can be merged 
 youth_neet_complete <- youth_neet_essential %>% 
   left_join(continents_data_essential) %>% filter(Income.group != '') %>% 
   rename(
-    Youth_NEET_Pc = Share.of.youth.not.in.education..employment.or.training..total....of.youth.population., 
+    Youth_NEET_Pc = 
+Share.of.youth.not.in.education..employment.or.training..total....of.youth.population.,
     Income_Group = Income.group, 
     Country = Entity
   )
@@ -186,7 +192,9 @@ p1 <- average_continental_youth_neet %>%
     x = 'Year (1976-2022)',
     y = 'Average Youth NEET Rate (in %)',
     title = 'Average Continental Youth NEET Rate by Year', 
-    caption = '*Note Youth NEET: Youth Not in Employment, Education, or Training'
+    caption = paste(
+      '*Note Youth NEET: Youth Not in Employment, Education, or Training'
+    )
   ) +
   
   theme_minimal(13) +
@@ -306,7 +314,9 @@ p2 <- average_continental_youth_neet_2 %>%
     x = 'Year (2000-2022)',
     y = 'Average Youth NEET Rate (in %)',
     title = 'Average Continental Youth NEET Rate by Year', 
-    caption = '*Note Youth NEET: Youth Not in Employment, Education, or Training'
+    caption = paste(
+      '*Note Youth NEET: Youth Not in Employment, Education, or Training'
+    )
   ) +
   
   theme_minimal(13) +
@@ -451,7 +461,10 @@ p3 <- ggplot() +
     x = 'Year (2003-2022)',
     y = 'Average Youth NEET Rate (in %)',
     title = 'Average Annual Youth NEET Rate by Income Group (Africa)', 
-    caption = '*Note Youth NEET: Youth Not in Employment, Education, or Training, and few data available for HICs in Africa in observed time period', 
+    caption = paste(
+      '*Note Youth NEET: Youth Not in Employment, Education, or Training,',
+      'and few data available for HICs in Africa in observed time period'
+      ), 
     colour = 'Income group'
     ) +
 
@@ -596,7 +609,10 @@ p4 <- ggplot() +
     x = 'Year (2000-2022)',
     y = 'Average Youth NEET Rate (in %)',
     title = 'Average Annual Youth NEET Rate by Income Group (Europe)', 
-    caption = '*Note Youth NEET: Youth Not in Employment, Education, or Training, and no data available for LICs & LMICs in Europe in observed time period', 
+    caption = paste(
+      '*Note Youth NEET: Youth Not in Employment, Education, or Training,', 
+      'and no data available for LICs & LMICs in Europe in observed time period'
+      ), 
     colour = 'Income group'
     ) +
   
@@ -619,7 +635,7 @@ p4 <- ggplot() +
       size = 10, face = "bold", hjust = 0.5
     ),
     plot.caption = element_text(
-      size = 7, hjust = 0
+      size = 6, hjust = 0
     ),
     axis.title.y = element_text(
       size = 10, face = "bold"
@@ -742,7 +758,10 @@ p5 <- ggplot() +
     x = 'Year (2001-2022)',
     y = 'Average Youth NEET Rate (in %)',
     title = 'Average Annual Youth NEET Rate by Income Group (North America)', 
-    caption = '*Note Youth NEET: Youth Not in Employment, Education, or Training, and no data available for LICs in North America in observed time period', 
+    caption = paste(
+      '*Note Youth NEET: Youth Not in Employment, Education, or Training,', 
+      'and no data available for LICs in North America in observed time period'
+      ), 
     colour = 'Income group'
     ) +
   
@@ -765,7 +784,7 @@ p5 <- ggplot() +
       size = 10, face = "bold", hjust = 0.5
     ),
     plot.caption = element_text(
-      size = 7, hjust = 0
+      size = 6, hjust = 0
     ),
     axis.title.y = element_text(
       size = 10, face = "bold"
@@ -888,7 +907,10 @@ p6 <- ggplot() +
     x = 'Year (1999-2022)',
     y = 'Average Youth NEET Rate (in %)',
     title = 'Average Annual Youth NEET Rate by Income Group (South America)', 
-    caption = '*Note Youth NEET: Youth Not in Employment, Education, or Training, and no data available for LICs in South America in observed time period', 
+    caption = paste(
+      '*Note Youth NEET: Youth Not in Employment, Education, or Training,', 
+      'and no data available for LICs in South America in observed time period'
+      ), 
     colour = 'Income group'
     ) +
   
@@ -911,7 +933,7 @@ p6 <- ggplot() +
       size = 10, face = "bold", hjust = 0.5
     ),
     plot.caption = element_text(
-      size = 7, hjust = 0
+      size = 6, hjust = 0
     ),
     axis.title.y = element_text(
       size = 10, face = "bold"
@@ -1034,7 +1056,10 @@ p7 <- ggplot() +
     x = 'Year (2009-2022)',
     y = 'Average Youth NEET Rate (in %)',
     title = 'Average Annual Youth NEET Rate by Income Group (Asia)', 
-    caption = '*Note Youth NEET: Youth Not in Employment, Education, or Training, and few data available for LICs in Asia in observed time period', 
+    caption = paste(
+      '*Note Youth NEET: Youth Not in Employment, Education, or Training,', 
+      'and few data available for LICs in Asia in observed time period'
+      ), 
     colour = 'Income group'
     ) +
   
@@ -1180,7 +1205,10 @@ p8 <- ggplot() +
     x = 'Year (2005-2021)',
     y = 'Average Youth NEET Rate (in %)',
     title = 'Average Annual Youth NEET Rate by Income Group (Oceania)', 
-    caption = '*Note Youth NEET: Youth Not in Employment, Education, or Training, and no data available for LICs in Oceania in observed time period', 
+    caption = paste(
+      '*Note Youth NEET: Youth Not in Employment, Education, or Training,',
+      'and no data available for LICs in Oceania in observed time period'
+      ), 
     colour = 'Income group'
     ) +
   
@@ -1225,7 +1253,7 @@ plot(p8)
 ```
 
 \newpage
-### ***9) Youth NEET Rate Chloropleth World Map (2016-2022 Average)***
+### ***9) Youth NEET Rate Choropleth World Map (2016-2022 Average)***
 
 Compositon of the required data frame requires utilising the 'world' Data Set as well as the 'youth_neet_complete' Data Frame. 
 ```{r data modification 9, message=FALSE, warning=FALSE}
@@ -1237,7 +1265,7 @@ youth_neet_world <- youth_neet_complete %>%
   select(Country, Code, avg_youth_neet) %>% distinct(Country, Code, avg_youth_neet)
   
 # Joining the new data set created to the specific data frame loaded
-# utlised to compose the chloropleth world map
+# utlised to compose the choropleth world map
 world <- ne_countries(scale = "medium", returnclass = "sf") %>% 
   filter(name != 'Antarctica')
 
@@ -1245,7 +1273,7 @@ youth_neet_world_2016_2022 <- world %>%
   left_join(youth_neet_world, by = c("iso_a3" = "Code"))
 ```
 
-Visualising the overall Average Youth NEET Rate from 2016 to 2022, for each available Country on a World Chloropleth Map.
+Visualising the overall Average Youth NEET Rate from 2016 to 2022, for each available Country on a World Choropleth Map.
 ```{r data visualisation 9, message=FALSE, warning=FALSE}
 p9 <- youth_neet_world_2016_2022 %>% ggplot() +
   
@@ -1261,10 +1289,13 @@ p9 <- youth_neet_world_2016_2022 %>% ggplot() +
   
 # Formatting and Modifying the Data Visualisation
   labs(
-    title = 'Chloropleth Map displaying Youth NEET Rates (2016-2022 Average)', 
+    title = 'Choropleth Map displaying Youth NEET Rates (2016-2022 Average)', 
     fill = 'Youth NEET Rate (in %)', 
-    caption = '*Note Youth NEET: Youth Not in Employment, Education, or Training, and data for some countries is unavailable'
-    ) +
+    caption = paste(
+      '*Note Youth NEET: Youth Not in Employment, Education, or Training,', 
+      'and data for some countries is unavailable' 
+      ) 
+    )+
   
   theme_minimal(13) +
   
@@ -1333,8 +1364,11 @@ p10 <- youth_neet_box_2016_2022 %>% ggplot() +
     x = 'Continent',
     y = 'Average Youth NEET Rate (in %)',
     title = 'Youth NEET Rate Distribution by Continent (2016-2020 Average)', 
-    caption = '*Note Youth NEET: Youth Not in Employment, Education, or Training, and data for some countries is unavailable'
-    ) +
+    caption = paste(
+      '*Note Youth NEET: Youth Not in Employment, Education, or Training,', 
+      'and data for some countries is unavailable'
+      )
+    )+
   
   theme_minimal(13) +
   
@@ -1402,7 +1436,10 @@ p11 <- youth_neet_heatmap %>% ggplot() +
     x = 'Year',
     y = 'Continent',
     title = 'Heatmap of Continental Youth NEET Rate by Year (2005-2021)', 
-    caption = '*Note Youth NEET: Youth Not in Employment, Education, or Training, and data for some countries is unavailable',
+    caption = paste(
+    '*Note Youth NEET: Youth Not in Employment, Education, or Training,', 
+    'and data for some countries is unavailable'
+    ),
     fill = 'Average Youth NEET (in %)'
   ) +
   
