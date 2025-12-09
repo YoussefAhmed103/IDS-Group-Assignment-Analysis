@@ -1,82 +1,133 @@
 ---
 title: "IDS Group Assignment Analysis"
-author: 'Youssef Ahmed, Vijay Karthikeyan, Yanxin Huang, Annabel Chan, Arjun Kumar'
-date: "2025-12-04"
-output: pdf_document
+author: "Youssef Ahmed, Vijay Karthikeyan, Yanxin Huang, Annabel Chan, and Arjun Kumar"
+output:
+  pdf_document: default
 ---
-# Assignment brief:
-# Perform exploratory data analysis to assess how 6 continents in the world 
-# (all continents except Antarctica) are faring with respect to the following specific targets 
-# set out by the UN:
 
-# You may wish to compare across the continents, as well as assess their individual 
-# progress across time. You may also wish to further divide up a continent 
-# (e.g., into more developed vs. less developed countries).
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  fig.align = 'center',
+  out.width = '\\linewidth'
+)
+```
 
-# Target 2: By 2020, substantially reduce the proportion of youth not in employment, education or 
-# training. 
+# **Measuring Progress**
+## **UN Sustainable Development Goal 8:** 
+### **Decent Work and Economic Growth**
 
-# Installing and Loading R Packages Required
-# install.packages('tidyverse')
-# install.packages('ggplot2')
-# install.packages('dplyr')
-# install.packages('sf')
-# install.packages('rnaturalearthdata')
-# install.packages('rnaturalearth')
+The United Nations Sustainable Development Goals (SDGs) are global development targets adopted in 2015, where all countries have agreed to work towards achieving them by 2030.
 
+As a result, this group assignment aims to assess the progress of the 6 continents examined in meeting the UN SDG 8: Decent Work and Economic Growth, comprising Europe, Africa, Asia, North America, South America, and Oceania. Further, such objectives set out by the United Nations aim to promote sustained, inclusive and sustainable economic growth, full and productive employment as well as decent work for all.
+
+Such an assessment of the UN SDG 8 will be conducted by the analysis of two targets:
+
+- ***Target 1: Sustain per capita economic growth in accordance with national circumstances and, 
+in particular, at least 7 per cent gross domestic product growth per annum in the least 
+developed countries***
+
+- ***Target 2: By 2020, substantially reduce the proportion of youth not in employment, education or 
+training***
+
+The three data sets utilised comprise data regarding:
+
+- **Countries' classification to 7 diverse continents, including: Asia, Africa, North America, South America, Antarctica, Europe, and Oceania**
+- **GDP per capita, reported in 2017 USD in terms of the purchasing power parity (PPP) exchange rate for all countries in the world, with data possibly available from circa 1990**
+- **The share of youth not in education, employment, or training as a percentage of the total youth population for all the countries in the world, with data possibly available from circa 1976**
+
+In this data analysis such data sets provided are further complemented by a data set including data regarding country classification by income level for all countries available, as of 2025-26, derived from the World Bank.
+
+Primarily, to conduct exploratory data analysis on the data available from the 4 datasets mainly utilised throughout such an investigation on the progress of the UN SDG 8, the are various processes that will be required to initiate such an analysis comprising the following subsections for both Target 1 and Target 2: 
+
+- **Installation and Loading of relevant R Packages**
+- **Data Cleaning and Joining**
+- **Data Visualisation**
+
+\newpage
+## **Installation and Loading of R Packages**
+
+### Installation of Required R Packages
+```{r packages installation, message=FALSE, warning=FALSE}
+#install.packages('tidyverse')
+#install.packages('ggplot2')
+#install.packages('dplyr')
+#install.packages('sf')
+#install.packages('rnaturalearthdata')
+#install.packages('rnaturalearth')
+```
+
+### Loading Required R Packages
+```{r packages loading, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
 library(sf)
 library(rnaturalearthdata)
 library(rnaturalearth)
+```
 
-# Loading Datasets Required for Target 2
+\newpage
+# ***Target 2: By 2020, substantially reduce the proportion of youth not in employment, education or training***
+
+## **Data Cleaning and Joining**
+
+### Loading Datasets Required
+```{r dataset loading, message=FALSE, warning=FALSE}
 continents_data <- read.csv("data sets/continents-according-to-our-world-in-data.csv")
 
 youth_neet <- read.csv("data sets/youth-not-in-education-employment-training.csv")
 
 income_groups <- read.csv("data sets/CLASS_2025_10_07.csv")
+```
 
-
-# Data Joining and Cleaning
-
-# Selecting Specific Data Columns Required
+### Selecting Specific Data Columns Required
+Specific column variables are required throughout this data analysis, hence the selecting of specific variables across the 'income_groups' and 'continents_data' data sets.
+```{r data selecting 1, message=FALSE, warning=FALSE}
 income_groups_essential <- income_groups %>% select(Economy, Code, Income.group)
 
 continents_data_essential <- continents_data %>% select(Entity, Code, Continent)
+```
 
-
-# Checking for and Identifying Non-Corresponding Primary Keys between Data Frames
+### Checking for and Identifying Non-Corresponding Primary Keys between Data Frames
+Kosovo's Country Code has been identified as uncorresponding between the observed data frames and therefore requires adjustment.
+```{r primary key checking 1, message=FALSE, warning=FALSE, results= 'hide'}
 setequal(youth_neet$Code, income_groups_essential$Code)
 
 anti_join(youth_neet, income_groups_essential, by = "Code")
+```
 
-
-# Replacing Identified Non-Corresponding Primary Keys (Country Name Corresponds, Code does not).
-# Since left_join will be utilised for merging 'youth_neet' and 
-# 'income_groups_essential', Kosovo's Country Code needs to be adjusted, 
-# and accordingly the Country Code in the 'continents_data_essential' Data Frame
+### Replacing Identified Non-Corresponding Primary Keys
+Kosovo's Country Name coressponds across the data frames while its Country Code does not, hence a required primary key replacement in the 'youth_neet' data frame to ensure all of the possible countries in such a data frame are maintained when merged with the 'continents_data_essential' data frame.
+```{r primary key replacement}
 youth_neet$Code <- recode(youth_neet$Code, 'OWID_KOS' = 'XKX')
 
 continents_data_essential$Code <- recode(continents_data_essential$Code, 'OWID_KOS' = 'XKX')
+```
 
-
-# Joining Datasets (youth_neet and income_groups_essential)
+### Joining Datasets
+The 'left_join()' function will be utilised to merge the'youth_neet' and 'income_groups_essential' data frames, in order to preserve all, or as many of the 'youth_neet' observations as possible, in terms of countries. This results in a data frame providing information regarding the particular country (repeated through 'Entity' and 'Economy' columns), country code, observed year, youth NEET rate, and income group.
+```{r data joining 1, message=FALSE, warning=FALSE}
 youth_neet_classification <- youth_neet %>% left_join(income_groups_essential)
+```
 
-# Checking for and Identifying Non-Corresponding Primary Keys between youth_neet_classification
-# and continents_data_essential Data Frame
+### Checking for and Identifying Non-Corresponding Primary Keys between Data Frames
+Carrying out such an operation verifies that all, or as many country observations in the 'youth_classification' data frame as possible are preserved when joined with the 'continents_data_essential' data frame, which has been verified in this case, as continental observations will be constructed when required for the relevant data visualisation.
+```{r primary key checking 2, message=FALSE, warning=FALSE, results='hide'}
 anti_join(youth_neet_classification, continents_data_essential, by = "Code")
+```
 
-# Selecting Required Column Variables
+### Selecting Required Column Variables
+Specific column variables are required throughout this data analysis, hence the selecting of specific variables across the 'youth_neet_classification' data set.This results in a data frame providing information regarding the particular country, country code, observed year, youth NEET rate, and income group.
+```{r data selecting 2, message=FALSE, warning=FALSE}
 youth_neet_essential <- youth_neet_classification %>% 
   select(
   Entity, Code, Year, Share.of.youth.not.in.education..employment.or.training..total....of.youth.population., Income.group
   )
+```
 
-# Joining Datasets ('youth_essential' and 'continents_data_essential'),
-# Removing Missing-Variable Observations and Renaming Column Variables
+### Joining Datasets
+The 'youth_essential' and 'continents_data_essential' data frames can be merged using the 'left_join()' function. Missing variable observations can be removed using the 'filter()' function, while column variables can be renamed using the 'rename()' function to provide more effective and efficient column variable names.
+```{r data joining 2, message=FALSE, warning=FALSE}
 youth_neet_complete <- youth_neet_essential %>% 
   left_join(continents_data_essential) %>% filter(Income.group != '') %>% 
   rename(
@@ -84,25 +135,30 @@ youth_neet_complete <- youth_neet_essential %>%
     Income_Group = Income.group, 
     Country = Entity
   )
+```
 
-
-# Checking for Appearance of Antarctica in observations
+### Checking for Appearance of Antarctica in observations
+The 'unique()' function is used to ensure that Antarctica is exluded from the final and cleaned data frame. The number of countries included and their name, respectively, in the final data frame can also be derived when utilisng such a function.
+```{r observation checking, message=FALSE, warning=FALSE, results='hide'}
 unique(youth_neet_complete$Continent)
 unique(youth_neet_complete$Country)
+```
 
+As a result, the data frame 'youth_neet_complete' includes the required information to visualise the provided data effectively.
 
-# Data Visualisation
+\newpage
+## **Data Visualisation**
 
-# 1) Annual Average Continental Youth NEET % by Year
-# Creating a new Data Frame to derive the average Youth NEET percentage for each 
-# continent for the available years using the 'youth_neet_complete' Data Set
+### ***1) Annual Average Continental Youth NEET % by Year***
+Creating a new Data Frame to derive the Average Youth NEET Rate for each Continent for the available years using the 'youth_neet_complete' Data Set.
+```{r data modification 1, message=FALSE, warning=FALSE}
 average_continental_youth_neet <- youth_neet_complete %>%
- group_by(Continent, Year) %>%
-  summarise(avg_neet = mean(Youth_NEET_Pc)) %>%
+group_by(Continent, Year) %>% summarise(avg_neet = mean(Youth_NEET_Pc)) %>% 
   ungroup()
+```
 
-# Visualising the Data derived through respective average 
-# continental Youth NEET Rate (by Year), where data points are connected by lines
+Visualising the Data derived through respective Average Continental Youth NEET Rate, by Year, where data points are connected by lines.
+```{r data visualisation 1, message=FALSE, warning=FALSE}
 p1 <- average_continental_youth_neet %>%
   
   ggplot() +
@@ -127,7 +183,7 @@ p1 <- average_continental_youth_neet %>%
 
 # Formatting and Modifying the Data Visualisation  
   labs(
-    x = 'Year',
+    x = 'Year (1976-2022)',
     y = 'Average Youth NEET Rate (in %)',
     title = 'Average Continental Youth NEET Rate by Year', 
     caption = '*Note Youth NEET: Youth Not in Employment, Education, or Training'
@@ -170,20 +226,21 @@ p1 <- average_continental_youth_neet %>%
   )
 
 
-print(p1)
+plot(p1)
+```
 
-# 2) Annual Average Continental Youth NEET % by Year (Event Accentuation)
+\newpage
+### ***2) Annual Average Continental Youth NEET Rate by Year (Event Accentuation)***
 
-# Creating a new Data Frame to derive the Average Youth NEET Rate for each 
-# Continent for the available years using the 'youth_neet_complete' Data Set
-# and ensuring at least most of the observations begin from 
-# the same year such that missing data on the plot are minimised
+Creating a new Data Frame to derive the Average Youth NEET Rate for each Continent for the available years using the 'youth_neet_complete' Data Set and ensuring at least most of the observations begin from the same year such that missing data on the plot are minimised.
+```{r data modification 2, message=FALSE, warning=FALSE}
 average_continental_youth_neet_2 <- youth_neet_complete %>%
   filter(Year >= 2000) %>% group_by(Continent, Year) %>%
   summarise(avg_neet = mean(Youth_NEET_Pc)) %>% ungroup()
+```
 
-# Visualising the Data derived through respective Average 
-# Continental Youth NEET Rate (by Year), where data points are connected by lines
+Visualising the Data derived through respective Average Continental Youth NEET rate, by Year, where data points are connected by lines. 
+```{r data visualisation 2, message=FALSE, warning=FALSE}
 p2 <- average_continental_youth_neet_2 %>%
   
   ggplot() +
@@ -246,7 +303,7 @@ p2 <- average_continental_youth_neet_2 %>%
   
 # Formatting and Modifying the Data Visualisation  
   labs(
-    x = 'Year',
+    x = 'Year (2000-2022)',
     y = 'Average Youth NEET Rate (in %)',
     title = 'Average Continental Youth NEET Rate by Year', 
     caption = '*Note Youth NEET: Youth Not in Employment, Education, or Training'
@@ -289,17 +346,15 @@ p2 <- average_continental_youth_neet_2 %>%
   )
 
 
-print(p2)
+plot(p2)
+```
 
-# 3) Intra-Continental Observation of Youth NEET Rates (Africa)
-# Comparison between every intra-continental income group's average 
-# Youth NEET Rate and the continental rate
+\newpage
+### ***3) Intra-Continental Observation of Youth NEET Rates (Africa)***
+Comparison between every intra-continental Income Group's average Youth NEET rate and the Continental Rate.
 
-# Creating new Data Frames to derive the Average Youth NEET Rate for Africa
-# for the available years using the 'youth_neet_complete' Data Set,
-# and the Average Youth NEET Rate by Income Group in Africa, ensuring at 
-# least most of the observations begin from the same year 
-# such that missing data on the plot are minimised
+Creating new Data Frames to derive the Average Youth NEET Rate for Africa for the available years using the 'youth_neet_complete' Data Set, and the Average Youth NEET Rate by Income Group in Africa, ensuring at least most of the observations begin from the same year such that missing data on the plot are minimised.
+```{r data modification 3, message=FALSE, warning=FALSE}
 intra_continental_income_group <- youth_neet_complete %>% 
   group_by(Continent, Income_Group, Year) %>%
   summarise(avg_neet = mean(Youth_NEET_Pc)) %>% ungroup()
@@ -309,10 +364,10 @@ Af <- intra_continental_income_group %>% filter(Continent == 'Africa') %>%
 
 Af_avg_neet <- average_continental_youth_neet %>% 
   filter(Continent == 'Africa') %>% filter(Year >= 2003)
+```
 
-# Visualising the Data derived through Average African Youth NEET Rate of 
-# the continent overall and its Income Groups (by Year),
-# where data points are connected by lines
+Visualising the Data derived through Average African Youth NEET Rate of the continent overall and its Income Groups, by Year, where data points are connected by lines.
+```{r data visualisation 3, message=FALSE, warning=FALSE}
 p3 <- ggplot() + 
   
   geom_point(
@@ -416,40 +471,36 @@ p3 <- ggplot() +
       color = "#EFEFEF", size = 0.25
     ),
     plot.title = element_text(
-      size = 12, face = "bold", hjust = 0.5
+      size = 10, face = "bold", hjust = 0.5
     ),
     plot.caption = element_text(
       size = 7, hjust = 0
     ),
     axis.title.y = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     axis.title.x = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     legend.position = "right",
     legend.title = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     legend.text = element_text(
-      size = 11
+      size = 9
     ) 
   )
 
 
-print(p3)
+plot(p3)
+```
 
+\newpage
+### ***4) Intra-Continental Observation of Youth NEET Rates (Europe)***
+Comparison between every intra-continental Income Group's Average Youth NEET Rate and the Continental Rate.
 
-# 4) Intra-Continental Observation of Youth NEET Rates (Europe)
-# Comparison between every intra-continental income group's average 
-# Youth NEET Rate and the continental rate
-
-
-# Creating new Data Frames to derive the Average Youth NEET Rate for Europe
-# for the available years using the 'youth_neet_complete' Data Set,
-# and the Average Youth NEET Rate by Income Group in Europe, ensuring at 
-# least most of the observations begin from the same year 
-# such that missing data on the plot are minimised
+Creating new Data Frames to derive the Average Youth NEET Rate for Europe for the available years using the 'youth_neet_complete' Data Set, and the Average Youth NEET Rate by Income Group in Europe, ensuring at least most of the observations begin from the same year such that missing data on the plot are minimised.
+```{r data modification 4, message=FALSE, warning=FALSE}
 intra_continental_income_group <- youth_neet_complete %>% 
   group_by(Continent, Income_Group, Year) %>%
   summarise(avg_neet = mean(Youth_NEET_Pc)) %>% ungroup()
@@ -459,10 +510,9 @@ Eu <- intra_continental_income_group %>% filter(Continent == 'Europe') %>%
 
 Eu_avg_neet <- average_continental_youth_neet %>% 
   filter(Continent == 'Europe') %>% filter(Year >= 2000)
-
-# Visualising the Data derived through Average European Youth NEET Rate of 
-# the continent overall and its Income Groups (by Year),
-# where data points are connected by lines
+```
+Visualising the Data derived through Average European Youth NEET Rate of the continent overall and its Income Groups, by Year, where data points are connected by lines.
+```{r data visualisation 4, message=FALSE, warning=FALSE}
 p4 <- ggplot() + 
   
   geom_point(
@@ -566,41 +616,36 @@ p4 <- ggplot() +
       color = "#EFEFEF", size = 0.25
     ),
     plot.title = element_text(
-      size = 12, face = "bold", hjust = 0.5
+      size = 10, face = "bold", hjust = 0.5
     ),
     plot.caption = element_text(
       size = 7, hjust = 0
     ),
     axis.title.y = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     axis.title.x = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     legend.position = "right",
     legend.title = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     legend.text = element_text(
-      size = 11
+      size = 9
     ) 
   )
 
 
-print(p4)
+plot(p4)
+```
 
+\newpage
+### ***5) Intra-Continental Observation of Youth NEET Rates (North America)***
+Comparison between every intra-continental Income Group's Average Youth NEET Rate and the Continental Rate.
 
-
-# 5) Intra-Continental Observation of Youth NEET Rates (NA)
-# Comparison between every intra-continental income group's average 
-# Youth NEET Rate and the continental rate
-
-
-# Creating new Data Frames to derive the Average Youth NEET Rate for North 
-# America for the available years using the 'youth_neet_complete' Data Set,
-# and the Average Youth NEET Rate by Income Group in North America, ensuring at 
-# least most of the observations begin from the same year 
-# such that missing data on the plot are minimised
+Creating new Data Frames to derive the Average Youth NEET Rate for North America for the available years using the 'youth_neet_complete' Data Set, and the Average Youth NEET Rate by Income Group in North America, ensuring at least most of the observations begin from the same year such that missing data on the plot are minimised.
+```{r data modification 5, message=FALSE, warning=FALSE}
 intra_continental_income_group <- youth_neet_complete %>% 
   group_by(Continent, Income_Group, Year) %>%
   summarise(avg_neet = mean(Youth_NEET_Pc)) %>% ungroup()
@@ -610,10 +655,10 @@ Na <- intra_continental_income_group %>% filter(Continent == 'North America') %>
 
 Na_avg_neet <- average_continental_youth_neet %>% 
   filter(Continent == 'North America') %>% filter(Year >= 2001)
+```
 
-# Visualising the Data derived through Average North American Youth NEET Rate of 
-# the continent overall and its Income Groups (by Year),
-# where data points are connected by lines
+Visualising the Data derived through Average North American Youth NEET Rate of the continent overall and its Income Groups, by Year, where data points are connected by lines.
+```{r data visualisation 5, message=FALSE, warning=FALSE}
 p5 <- ggplot() + 
   
   geom_point(
@@ -717,40 +762,36 @@ p5 <- ggplot() +
       color = "#EFEFEF", size = 0.25
     ),
     plot.title = element_text(
-      size = 12, face = "bold", hjust = 0.5
+      size = 10, face = "bold", hjust = 0.5
     ),
     plot.caption = element_text(
       size = 7, hjust = 0
     ),
     axis.title.y = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     axis.title.x = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     legend.position = "right",
     legend.title = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     legend.text = element_text(
-      size = 11
+      size = 9
     ) 
   )
 
 
-print(p5)
+plot(p5)
+```
 
+\newpage
+### ***6) Intra-Continental Observation of Youth NEET Rates (South America)***
+Comparison between every intra-continental Income Group's Average Youth NEET Rate and the Continental Rate.
 
-# 6) Intra-Continental Observation of Youth NEET Rates (SA)
-# Comparison between every intra-continental income group's average 
-# Youth NEET Rate and the continental rate
-
-
-# Creating new Data Frames to derive the Average Youth NEET Rate for South
-# America for the available years using the 'youth_neet_complete' Data Set,
-# and the Average Youth NEET Rate by Income Group in South America, ensuring at 
-# least most of the observations begin from the same year 
-# such that missing data on the plot are minimised
+Creating new Data Frames to derive the Average Youth NEET Rate for South America for the available years using the 'youth_neet_complete' Data Set, and the Average Youth NEET Rate by Income Group in South America, ensuring at least most of the observations begin from the same year such that missing data on the plot are minimised.
+```{r data modification 6, include=FALSE}
 intra_continental_income_group <- youth_neet_complete %>% 
   group_by(Continent, Income_Group, Year) %>%
   summarise(avg_neet = mean(Youth_NEET_Pc)) %>% ungroup()
@@ -760,10 +801,10 @@ Sa <- intra_continental_income_group %>% filter(Continent == 'South America') %>
 
 Sa_avg_neet <- average_continental_youth_neet %>% 
   filter(Continent == 'South America') %>% filter(Year >= 1999)
+```
 
-# Visualising the Data derived through Average South American Youth NEET Rate of 
-# the continent overall and its Income Groups (by Year),
-# where data points are connected by lines
+Visualising the Data derived through Average South American Youth NEET Rate of the continent overall and its Income Groups, by Year, where data points are connected by lines.
+```{r data visualisation 6, message=FALSE, warning=FALSE}
 p6 <- ggplot() + 
   
   geom_point(
@@ -867,41 +908,36 @@ p6 <- ggplot() +
       color = "#EFEFEF", size = 0.25
     ),
     plot.title = element_text(
-      size = 12, face = "bold", hjust = 0.5
+      size = 10, face = "bold", hjust = 0.5
     ),
     plot.caption = element_text(
       size = 7, hjust = 0
     ),
     axis.title.y = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     axis.title.x = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     legend.position = "right",
     legend.title = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     legend.text = element_text(
-      size = 11
+      size = 9
     ) 
   )
 
 
-print(p6)
+plot(p6)
+```
 
+\newpage
+### ***7) Intra-Continental Observation of Youth NEET Rates (Asia)***
+Comparison between every intra-continental Income Group's Average Youth NEET Rate and the Continental Rate.
 
-
-# 7) Intra-Continental Observation of Youth NEET Rates (Asia)
-# Comparison between every intra-continental income group's average 
-# Youth NEET Rate and the continental rate
-
-
-# Creating new Data Frames to derive the Average Youth NEET Rate for Asia
-# for the available years using the 'youth_neet_complete' Data Set,
-# and the Average Youth NEET Rate by Income Group in Asia, ensuring at 
-# least most of the observations begin from the same year 
-# such that missing data on the plot are minimised
+Creating new Data Frames to derive the Average Youth NEET Rate for Asia for the available years using the 'youth_neet_complete' Data Set, and the Average Youth NEET Rate by Income Group in Asia, ensuring at least most of the observations begin from the same year such that missing data on the plot are minimised.
+```{r data modification 7, message=FALSE, warning=FALSE}
 intra_continental_income_group <- youth_neet_complete %>% 
   group_by(Continent, Income_Group, Year) %>%
   summarise(avg_neet = mean(Youth_NEET_Pc)) %>% ungroup()
@@ -911,10 +947,10 @@ As <- intra_continental_income_group %>% filter(Continent == 'Asia') %>%
 
 As_avg_neet <- average_continental_youth_neet %>% 
   filter(Continent == 'Asia') %>% filter(Year >= 2009)
+```
 
-# Visualising the Data derived through Average Asian Youth NEET Rate of 
-# the continent overall and its Income Groups (by Year),
-# where data points are connected by lines
+Visualising the Data derived through Average Asian Youth NEET Rate of the continent overall and its Income Groups, by Year, where data points are connected by lines.
+```{r data visualisation 7, message=FALSE, warning=FALSE}
 p7 <- ggplot() + 
   
   geom_point(
@@ -1018,40 +1054,36 @@ p7 <- ggplot() +
       color = "#EFEFEF", size = 0.25
     ),
     plot.title = element_text(
-      size = 12, face = "bold", hjust = 0.5
+      size = 10, face = "bold", hjust = 0.5
     ),
     plot.caption = element_text(
       size = 7, hjust = 0
     ),
     axis.title.y = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     axis.title.x = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     legend.position = "right",
     legend.title = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     legend.text = element_text(
-      size = 11
+      size = 9
     ) 
   )
 
 
-print(p7)
+plot(p7)
+```
 
+\newpage
+### ***8) Intra-Continental Observation of Youth NEET Rates (Oceania)***
+Comparison between every intra-continental Income group's Average Youth NEET Rate and the Continental Rate.
 
-# 8) Intra-Continental Observation of Youth NEET Rates (Oceania)
-# Comparison between every intra-continental income group's average 
-# Youth NEET Rate and the continental rate
-
-
-# Creating new Data Frames to derive the Average Youth NEET Rate for Oceania
-# for the available years using the 'youth_neet_complete' Data Set,
-# and the Average Youth NEET Rate by Income Group in Oceania, ensuring at 
-# least most of the observations begin from the same year 
-# such that missing data on the plot are minimised
+Creating new Data Frames to derive the Average Youth NEET Rate for Oceania the available years using the 'youth_neet_complete' Data Set, and the Average Youth NEET Rate by Income Group in Oceania, ensuring at least most of the observations begin from the same year such that missing data on the plot are minimised.
+```{r data modification 8, message=FALSE, warning=FALSE}
 intra_continental_income_group <- youth_neet_complete %>% 
   group_by(Continent, Income_Group, Year) %>%
   summarise(avg_neet = mean(Youth_NEET_Pc)) %>% ungroup()
@@ -1061,10 +1093,10 @@ Oce <- intra_continental_income_group %>% filter(Continent == 'Oceania') %>%
 
 Oce_avg_neet <- average_continental_youth_neet %>% 
   filter(Continent == 'Oceania') %>% filter(Year >= 2005)
+```
 
-# Visualising the Data derived through Average Oceanian Youth NEET Rate of 
-# the continent overall and its Income Groups (by Year),
-# where data points are connected by lines
+Visualising the Data derived through Average Oceanian Youth NEET Rate of the continent overall and its Income Groups, by Year, where data points are connected by lines.
+```{r data visualisation 8, message=FALSE, warning=FALSE}
 p8 <- ggplot() + 
   
   geom_point(
@@ -1168,36 +1200,36 @@ p8 <- ggplot() +
       color = "#EFEFEF", size = 0.25
     ),
     plot.title = element_text(
-      size = 12, face = "bold", hjust = 0.5
+      size = 10, face = "bold", hjust = 0.5
     ),
     plot.caption = element_text(
       size = 7, hjust = 0
     ),
     axis.title.y = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     axis.title.x = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     legend.position = "right",
     legend.title = element_text(
-      size = 11, face = "bold"
+      size = 10, face = "bold"
     ),
     legend.text = element_text(
-      size = 11
+      size = 9
     ) 
   )
 
 
-print(p8)
+plot(p8)
+```
 
+\newpage
+### ***9) Youth NEET Rate Chloropleth World Map (2016-2022 Average)***
 
-# 9) Youth NEET Rate Chloropleth World Map (2016-2020 Average)
-
-# Filtering the 'youth_neet_complete' data set to include time period
-# around from when the SDG 8: Target 2 was enacted to the target year, and
-# calculating the average Youth NEET Rate by country within the specific
-# time period determined from 2019 to 2022
+Compositon of the required data frame requires utilising the 'world' Data Set as well as the 'youth_neet_complete' Data Frame. 
+```{r data modification 9, message=FALSE, warning=FALSE}
+# Filtering the 'youth_neet_complete' data set to include time period around from when the SDG 8: Target 2 was enacted to the target year, and calculating the average Youth NEET Rate by Country within the specific time period determined from 2016 to 2022.
 youth_neet_world <- youth_neet_complete %>% 
   filter(Year >= 2016 & Year <= 2022) %>% group_by(Country) %>%
   summarise(avg_youth_neet = mean(Youth_NEET_Pc, na.rm = TRUE)) %>% 
@@ -1211,9 +1243,10 @@ world <- ne_countries(scale = "medium", returnclass = "sf") %>%
 
 youth_neet_world_2016_2022 <- world %>%
   left_join(youth_neet_world, by = c("iso_a3" = "Code"))
+```
 
-# Visualising the overall Average Youth NEET Rate from 2016 to 2022, for each
-# avaiable country on a world chloropleth map
+Visualising the overall Average Youth NEET Rate from 2016 to 2022, for each available Country on a World Chloropleth Map.
+```{r data visualisation 9, message=FALSE, warning=FALSE}
 p9 <- youth_neet_world_2016_2022 %>% ggplot() +
   
   geom_sf(
@@ -1249,7 +1282,7 @@ p9 <- youth_neet_world_2016_2022 %>% ggplot() +
       color = "#EFEFEF", size = 0.25
     ),
     plot.title = element_text(
-      size = 12, face = "bold", hjust = 0.5
+      size = 10, face = "bold", hjust = 0.5
     ),
     plot.caption = element_text(
       size = 7, hjust = 0
@@ -1262,7 +1295,7 @@ p9 <- youth_neet_world_2016_2022 %>% ggplot() +
     ),
     legend.position = "right",
     legend.title = element_text(
-      size = 11, face = "bold"
+      size = 9, face = "bold"
     ),
     legend.text = element_text(
       size = 11
@@ -1270,19 +1303,22 @@ p9 <- youth_neet_world_2016_2022 %>% ggplot() +
   )
 
 
-print(p9)
+plot(p9)
+```
 
-# 10) Box Plot of Youth NEET by Continent
+\newpage
+### ***10) Box Plot of Youth NEET Rate by Continent***
 
-# Composing a data frame which includes the average Youth NEET rate of every
-# country avaiable within each continent over the time period from 2016 to 2022
+Composing a Data Frame which includes the Average Youth NEET Rate of every Country available within each Continent over the time period from 2016 to 2022.
+```{r data modification 10, message=FALSE, warning=FALSE}
 youth_neet_box_2016_2022 <- youth_neet_world %>% 
   inner_join(youth_neet_complete) %>% 
   select(Country, avg_youth_neet, Continent) %>% 
   distinct(Country, avg_youth_neet, Continent)
+```
 
-# Visualising the data on a box plot, demonstrating the distribution of the 
-# Average Youth NEET Rate from 2016 to 2022, by continent
+Visualising the Data on a box plot, demonstrating the distribution of the Average Youth NEET Rate from 2016 to 2022, by Continent.
+```{r data visualisation 10, message=FALSE, warning=FALSE}
 p10 <- youth_neet_box_2016_2022 %>% ggplot() +
   
   geom_boxplot(
@@ -1336,19 +1372,21 @@ p10 <- youth_neet_box_2016_2022 %>% ggplot() +
     ) 
   )
 
-print(p10)
+plot(p10)
+```
 
-# 11) Heatmap of Annual Youth NEET Rate by Continent
+\newpage
+### ***11) Heatmap of Annual Youth NEET Rate by Continent***
 
-# Composing a new data frame which includes the Annual Average Youth
-# NEET Rate by Continent from circa 2004 to 2021, as this is a period of time
-# where there are fewer missing data values for the continents investigated.
+Composing a new Data Frame which includes the Annual Average Youth NEET Rate by Continent from circa 2004 to 2021, as this is a period of time where there are fewer missing data values for the continents investigated.
+```{r data modification 11, message=FALSE, warning=FALSE}
 youth_neet_heatmap <- youth_neet_complete %>% 
   filter(Year >= 2004 & Year <= 2021) %>% group_by(Continent, Year) %>% 
   summarise(avg_neet = mean(Youth_NEET_Pc, na.rm = TRUE)) %>% ungroup()
+```
 
-# Visualising the data to demonstrate the Annual Continental Youth NEET Rate 
-# over time
+Visualising the Data to demonstrate the Annual Continental Youth NEET Rate over time
+```{r data visualisation 11, message=FALSE, warning=FALSE}
 p11 <- youth_neet_heatmap %>% ggplot() + 
   
   geom_tile(
@@ -1405,6 +1443,11 @@ p11 <- youth_neet_heatmap %>% ggplot() +
   )
 
 
-print(p11)
+plot(p11)
+```
 
 
+
+# The End
+
+Group Assignment by (GitHub usernames): Youssef Ahmed (YoussefAhmed103), Vijay Karthikeyan (Vjk-417), Yanxin Huang (yh4725), Annabel Chan (annabelchan79), and Arjun Kumar (ak4625)
