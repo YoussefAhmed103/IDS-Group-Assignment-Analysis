@@ -3,6 +3,7 @@ title: "IDS Group Assignment Analysis"
 author: "Youssef Ahmed, Vijay Karthikeyan, Yanxin Huang, Annabel Chan, and Arjun Kumar"
 output:
   pdf_document: default
+urlcolor: blue
 ---
 
 ```{r setup, include=FALSE}
@@ -1488,3 +1489,5 @@ plot(p11)
 # The End
 
 Group Assignment by (GitHub usernames): Youssef Ahmed (YoussefAhmed103), Vijay Karthikeyan (Vjk-417), Yanxin Huang (yh4725), Annabel Chan (annabelchan79), and Arjun Kumar (ak4625)
+
+Gihtub Repository: [link](https://github.com/YoussefAhmed103/IDS-Group-Assignment-Analysis)
