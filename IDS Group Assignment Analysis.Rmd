@@ -381,19 +381,19 @@ Creating new Data Frames required for the following Data Visualisation.
 ```{r data modification 15, message=FALSE, warning=FALSE}
 group_growth <- comb_growth2 %>%
   group_by(continent, year, ldc) %>%
-  summarise(weighted_growth = weighted.mean(growth_rate, na.rm = TRUE), 
+  summarise(mean_growth = mean(growth_rate, na.rm = TRUE), 
             .groups = "drop")
 
 cont_total_growth <- group_growth %>% 
   filter(!is.na(continent)) %>%
   group_by(continent, year) %>%
-  summarise(total_growth = sum(weighted_growth, na.rm = TRUE), .groups = "drop")
+  summarise(total_growth = sum(mean_growth, na.rm = TRUE), .groups = "drop")
 ```
 
 Visualising the Data derived from the Contribution of LDCs and Non-LDCs to Total Annual GDP Per Capita Growth through stacked bar charts and data points connected by lines.
 ```{r data visualisation 15, message=FALSE, warning=FALSE}
 p15 <- ggplot(group_growth %>% filter(!is.na(continent)), 
-              aes(x = year, y = weighted_growth, fill = ldc)) +
+              aes(x = year, y = mean_growth, fill = ldc)) +
   
   geom_col(alpha = 0.85) +
   
@@ -405,7 +405,7 @@ p15 <- ggplot(group_growth %>% filter(!is.na(continent)),
   
   labs(title = "Contribution of LDCs and Non-LDCs to GDP Per Capita Growth", 
        subtitle = "Bar Chart - Country Group Growth Rate   — Total Growth Rate", 
-       x = "Year", y = "Contribution (%)", fill = "Country Group") +
+       x = "Year", y = "Mean Growth Rate (in %)", fill = "Country Group") +
 
 theme_minimal(13) +
   
