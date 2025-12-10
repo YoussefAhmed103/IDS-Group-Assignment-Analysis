@@ -55,6 +55,9 @@ Primarily, to conduct exploratory data analysis on the data available from the 4
 #install.packages('sf')
 #install.packages('rnaturalearthdata')
 #install.packages('rnaturalearth')
+#install.packages('janitor')
+#install.packages('plotly')
+#install.packages('readr')
 ```
 
 ### Loading Required R Packages
@@ -65,6 +68,454 @@ library(dplyr)
 library(sf)
 library(rnaturalearthdata)
 library(rnaturalearth)
+library(janitor)
+library(plotly)
+library(readr)
+```
+
+\newpage
+# ***Target 1: Sustain per capita economic growth in accordance with national circumstances and, in particular, at least 7 per cent gross domestic product growth per annum in the least developed countries***
+
+## **Data Cleaning and Joining**
+
+### Loading Datasets Required
+```{r dataset loading 2, message=FALSE, warning=FALSE}
+continents <- read.csv(
+  "data sets/continents-according-to-our-world-in-data.csv") %>% clean_names()
+
+gdp <- read.csv("data sets/gdp-per-capita-worldbank.csv") %>% clean_names()
+
+income <- read.csv("data sets/CLASS_2025_10_07.csv") %>% clean_names()
+```
+
+### Joining Datasets and Selecting Specific Data Columns Required
+```{r data joining 3, message=FALSE, warning=FALSE}
+comb_gdp <- gdp %>%
+  select(entity, code, year,gdp_per_capita_ppp_constant_2017_international) %>%
+  left_join(continents %>% select(code, continent),by = "code")
+```
+
+### Composing New Data Frame
+Utilising previously-constructed Data Sets and performing calculations to derive a Data Frame comprising GDP per Capita Growth.
+```{r data modification 17, message=FALSE, warning=FALSE, results='hide'}
+comb_growth <- comb_gdp %>%
+  group_by(entity) %>%
+  arrange(year) %>%
+  mutate(
+    growth_rate = 
+      (gdp_per_capita_ppp_constant_2017_international -
+         lag(gdp_per_capita_ppp_constant_2017_international)) /
+      lag(gdp_per_capita_ppp_constant_2017_international) * 100) %>%
+  ungroup()
+```
+
+### Composing New Data Frame
+Utilising previously-constructed Data Sets and performing calculations to derive a Data Frame comprising GDP per Capita Growth by continent.
+```{r data modification 18, message=FALSE, warning=FALSE}
+cont_growth <- comb_growth %>%
+  group_by(continent, year) %>%
+  summarise(mean_growth = mean(growth_rate, na.rm = TRUE)) %>%
+  ungroup()
+```
+
+### Composing New Data Frame
+Utilising previously-constructed Data Sets and performing calculations to derive further required Data Frames
+```{r data modification 19, message=FALSE, warning=FALSE}
+comb_gdp2 <- comb_gdp %>%
+  left_join(income %>% select(code, income_group, lending_category), 
+            by = "code")
+
+comb_gdp2 <- comb_gdp2 %>%
+  mutate(ldc = if_else(income_group == 
+                         "Low income", "LDC Countries", "Non-LDC Countries"))
+
+comb_growth2 <- comb_gdp2 %>%
+  group_by(entity) %>%
+  arrange(year) %>%
+  mutate(growth_rate = 
+           (gdp_per_capita_ppp_constant_2017_international -
+              lag(gdp_per_capita_ppp_constant_2017_international)) / 
+      lag(gdp_per_capita_ppp_constant_2017_international) * 100) %>%
+  ungroup()
+
+# Average Continental GDP per Capita Growth Rate comprising 
+# Income Groups Data Frame
+cont_growth2 <- comb_growth2 %>%
+  group_by(continent, year) %>%
+  summarise(mean_growth = mean(growth_rate, na.rm = TRUE)) %>%
+  ungroup()
+
+# LDC Average GDP per Capita Growth Rate Data Frame
+ldc_growth <- comb_growth2 %>%
+  filter(ldc == "LDC Countries") %>%
+  group_by(continent, year) %>%
+  summarise(mean_growth = mean(growth_rate, na.rm = TRUE)) %>%
+  ungroup()
+
+# Deviation from UN SDG 8 7% Growth Rate Target Data Frame
+ldc_gap <- ldc_growth %>%
+  mutate(gap_to_target = mean_growth - 7)
+
+```
+
+As a result, the data frames constructed include the required information to visualise the provided data effectively.
+
+\newpage
+## **Data Visualisation**
+
+### ***1) Average Annual GDP per Capita Growth by Continent***
+Visualising the Data derived through respective GDP per Capita Growth by Continent, where data points are connected by lines.
+```{r data visualisation 12, message=FALSE, warning=FALSE}
+p12 <- ggplot(cont_growth%>% filter(!is.na(continent)), 
+              aes(x = year, y = mean_growth, color = continent)) +
+  
+  geom_line(linewidth = 0.7, alpha = 0.85) + 
+  
+  geom_point(size = 1.3, alpha = 0.9) +
+  
+  labs(title = "Average Annual GDP per Capita Growth by Continent", 
+       x = "Year", 
+       y = "Average Growth Rate (in %)", 
+       color = "Continent") + 
+  
+  theme_minimal(13) +
+  
+  theme(
+    plot.background = element_rect(
+      fill = "#F9F9F9", color = NA
+    ), 
+    panel.background = element_rect(
+      fill = "#FFFFFF", color = NA
+    ),
+    panel.grid.major = element_line(
+      color = "#D9D9D9", size = 0.5
+    ),
+    panel.grid.minor = element_line(
+      color = "#EFEFEF", size = 0.25
+    ),
+    plot.title = element_text(
+      size = 11, face = "bold", hjust = 0.5
+    ),
+    plot.subtitle = element_text(
+      size = 10, face = "bold", hjust = 0.5
+    ),
+    plot.caption = element_text(
+      size = 7, hjust = 0
+    ),
+    axis.title.y = element_text(
+      size = 11, face = "bold"
+    ),
+    axis.title.x = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.position = "bottom",
+    legend.title = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.text = element_text(
+      size = 11
+    ) 
+  )
+
+plot(p12)
+```
+
+\newpage
+### ***2) Annual Average Continental Contribution to Deviation from 7% GDP Per Capita Growth Target (LDC Countries)***
+
+Creating new Data Frames required for the following Data Visualisation.
+```{r data modification 13, message=FALSE, warning=FALSE}
+ldc_growth <- comb_growth2 %>%
+  filter(ldc == "LDC Countries") %>%
+  group_by(continent, year) %>%
+  summarise(mean_growth = mean(growth_rate, na.rm = TRUE)) %>%
+  ungroup()
+
+ldc_gap <- ldc_growth %>%
+  mutate(gap_to_target = mean_growth - 7)
+```
+
+Visualising the Data derived through respective Annual Average Continental Contribution to 7% GDP Per Capita Growth Target Deviation (LDC Countries), where stacked bar chars are employed, demonstrating the composition of larger data points. 
+```{r data visualisation 13, message=FALSE, warning=FALSE}
+p13 <- ggplot(ldc_gap, aes(x = year, y = gap_to_target, fill = continent)) + 
+  
+  geom_col(alpha = 0.9) +
+  
+  geom_hline(yintercept = 0, color = "black", linetype = "dashed", linewidth = 1) +
+  
+  labs(title = 
+         paste('Annual Average Continental Contribution to 7% GDP Per Capita', 
+         'Growth Target Deviation (LDC Countries)'), 
+       subtitle = "Bar Chart - Continent Contribution to Total LDC Growth towards Target", 
+       x = "Year", 
+       y = "Target Deviation (in %)", fill = "Continent") +
+  
+  theme_minimal(13) +
+  
+  theme(
+    plot.background = element_rect(
+      fill = "#F9F9F9", color = NA
+    ), 
+    panel.background = element_rect(
+      fill = "#FFFFFF", color = NA
+    ),
+    panel.grid.major = element_line(
+      color = "#D9D9D9", size = 0.5
+    ),
+    panel.grid.minor = element_line(
+      color = "#EFEFEF", size = 0.25
+    ),
+    plot.title = element_text(
+      size = 8, face = "bold", hjust = 0.5
+    ),
+    plot.subtitle = element_text(
+      size = 7, face = "bold", hjust = 0.5
+    ),
+    plot.caption = element_text(
+      size = 7, hjust = 0
+    ),
+    axis.title.y = element_text(
+      size = 11, face = "bold"
+    ),
+    axis.title.x = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.position = "bottom",
+    legend.title = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.text = element_text(
+      size = 11
+    ) 
+  )
+
+plot(p13)
+```
+
+\newpage
+### ***3) Average GDP per Capita Growth and Volatility by Income Group***
+
+Creating new Data Frames required for the following Data Visualisation.
+```{r data modification 14, message=FALSE, warning=FALSE}
+income_stats <- comb_growth2 %>%
+  group_by(income_group) %>%
+  summarise(avg_growth = mean(growth_rate, na.rm = TRUE), 
+            volatility = sd(growth_rate, na.rm = TRUE), .groups = "drop" )
+
+scale_factor <- max(income_stats$avg_growth, na.rm = TRUE) /
+  max(income_stats$volatility, na.rm = TRUE)
+
+```
+
+Visualising the Data derived through respective Average GDP per Capita Growth and Volatility by Income Group through bar charts and dual vertical axes denoting multiple variables.
+```{r data visualisation 14, message=FALSE, warning=FALSE}
+p14 <- ggplot(income_stats %>% filter(!is.na(income_group)) %>% 
+                filter(income_group != ""), aes(x = income_group)) +
+  
+  geom_col(aes(y = avg_growth, fill = income_group), alpha = 0.8) +
+  
+  geom_line(aes(
+    y = volatility * scale_factor, group = 1), color = "black", linewidth = 0.7
+    ) +
+  
+  geom_point(aes(y = volatility * scale_factor),color = "black", size = 3) +
+  
+  scale_y_continuous(
+    name = "Average GDP Per Capita Growth (%)", 
+    sec.axis = 
+      sec_axis(~ . / scale_factor, name = "Volatility (Standard Deviation)")
+    ) +
+  
+  labs(
+    title = "National Income Growth and Volatility Across Income Groups", 
+        subtitle = "Bar Chart - Average National Income Growth   — Volatility", 
+        x = "Income Group", fill = "Income Group"
+    ) +
+  
+  theme_minimal(13) +
+  
+  theme(
+    plot.background = element_rect(
+      fill = "#F9F9F9", color = NA
+    ), 
+    panel.background = element_rect(
+      fill = "#FFFFFF", color = NA
+    ),
+    panel.grid.major = element_line(
+      color = "#D9D9D9", size = 0.5
+    ),
+    panel.grid.minor = element_line(
+      color = "#EFEFEF", size = 0.25
+    ),
+    plot.title = element_text(
+      size = 12, face = "bold", hjust = 0.5
+    ),
+    plot.subtitle = element_text(
+      size = 10, face = "bold", hjust = 0.5
+    ),
+    plot.caption = element_text(
+      size = 7, hjust = 0
+    ),
+    axis.title.y = element_text(
+      size = 11, face = "bold"
+    ),
+    axis.title.x = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.position = "none",
+    legend.title = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.text = element_text(
+      size = 11
+    ) 
+  )
+
+plot(p14)
+```
+
+\newpage
+### ***4) Contribution of LDCs and Non-LDCs to Total Annual GDP Per Capita Growth***
+
+Creating new Data Frames required for the following Data Visualisation.
+```{r data modification 15, message=FALSE, warning=FALSE}
+group_growth <- comb_growth2 %>%
+  group_by(continent, year, ldc) %>%
+  summarise(weighted_growth = weighted.mean(growth_rate, na.rm = TRUE), 
+            .groups = "drop")
+
+cont_total_growth <- group_growth %>% 
+  filter(!is.na(continent)) %>%
+  group_by(continent, year) %>%
+  summarise(total_growth = sum(weighted_growth, na.rm = TRUE), .groups = "drop")
+```
+
+Visualising the Data derived from the Contribution of LDCs and Non-LDCs to Total Annual GDP Per Capita Growth through stacked bar charts and data points connected by lines.
+```{r data visualisation 15, message=FALSE, warning=FALSE}
+p15 <- ggplot(group_growth %>% filter(!is.na(continent)), 
+              aes(x = year, y = weighted_growth, fill = ldc)) +
+  
+  geom_col(alpha = 0.85) +
+  
+  geom_line(data = cont_total_growth, 
+            aes(x = year, y = total_growth, group = continent), 
+            color = "black", linewidth = 1.1, inherit.aes = FALSE) + 
+  
+  facet_wrap(~ continent, scales = "free_y") +
+  
+  labs(title = "Contribution of LDCs and Non-LDCs to GDP Per Capita Growth", 
+       subtitle = "Bar Chart - Country Group Growth Rate   — Total Growth Rate", 
+       x = "Year", y = "Contribution (%)", fill = "Country Group") +
+
+theme_minimal(13) +
+  
+  theme(
+    plot.background = element_rect(
+      fill = "#F9F9F9", color = NA
+    ), 
+    panel.background = element_rect(
+      fill = "#FFFFFF", color = NA
+    ),
+    panel.grid.major = element_line(
+      color = "#D9D9D9", size = 0.5
+    ),
+    panel.grid.minor = element_line(
+      color = "#EFEFEF", size = 0.25
+    ),
+    plot.title = element_text(
+      size = 11, face = "bold", hjust = 0.5
+    ),
+    plot.subtitle = element_text(
+      size = 10, face = "bold", hjust = 0.5
+    ),
+    plot.caption = element_text(
+      size = 7, hjust = 0
+    ),
+    axis.title.y = element_text(
+      size = 11, face = "bold"
+    ),
+    axis.title.x = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.position = "bottom",
+    legend.title = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.text = element_text(
+      size = 11
+    ) 
+  )
+
+plot(p15)
+```
+
+\newpage
+### ***4) Average Annual GDP Per Capita Growth by Income Classification***
+
+Creating a new Data Frame required for the following Data Visualisation.
+```{r data modification 16, message=FALSE, warning=FALSE}
+inc_group <- comb_growth2 %>%
+  filter(!is.na(income_group), !is.na(continent)) %>%
+  group_by(income_group, year) %>%
+  summarise(mean_growth = mean(growth_rate, na.rm = TRUE), .groups = "drop")
+```
+
+Visualising the Data derived from the respective Average Annual GDP Per Capita Growth by Income Classification through data points connected by lines.
+```{r data visualisation 16, message=FALSE, warning=FALSE}
+p16 <- ggplot(inc_group %>% filter(income_group != ""), 
+              aes(x = year, y = mean_growth)) +
+  
+  geom_line(linewidth = 0.7, color = "black") +
+  
+  geom_point(size = 0.7, color = "black", alpha = 0.85) +
+  
+  geom_hline(yintercept = 7, linetype = "dashed", color = "red", linewidth = 0.7) +
+  
+  facet_wrap(~ income_group, ncol = 2, scales = "free_y") +
+  
+  labs(title = "Average Annual GDP Per Capita Growth by Income Classification", x = "Year", 
+    y = "Average Growth (in %)") +
+  
+  geom_text(aes(label = 'UN SDG 7% LIC Target (2020) ', x = 2020, y = 15), 
+    colour = 'red', size = 2.5, hjust = 1) +
+  
+  theme_minimal(13) +
+  
+  theme(
+    plot.background = element_rect(
+      fill = "#F9F9F9", color = NA
+    ), 
+    panel.background = element_rect(
+      fill = "#FFFFFF", color = NA
+    ),
+    panel.grid.major = element_line(
+      color = "#D9D9D9", size = 0.5
+    ),
+    panel.grid.minor = element_line(
+      color = "#EFEFEF", size = 0.25
+    ),
+    plot.title = element_text(
+      size = 12, face = "bold", hjust = 0.5
+    ),
+    plot.caption = element_text(
+      size = 7, hjust = 0
+    ),
+    axis.title.y = element_text(
+      size = 11, face = "bold"
+    ),
+    axis.title.x = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.position = "right",
+    legend.title = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.text = element_text(
+      size = 11
+    ) 
+  )
+
+plot(p16)
 ```
 
 \newpage
@@ -73,7 +524,7 @@ library(rnaturalearth)
 ## **Data Cleaning and Joining**
 
 ### Loading Datasets Required
-```{r dataset loading, message=FALSE, warning=FALSE}
+```{r dataset loading 1, message=FALSE, warning=FALSE}
 continents_data <- read.csv("data sets/continents-according-to-our-world-in-data.csv")
 
 youth_neet <- read.csv("data sets/youth-not-in-education-employment-training.csv")
@@ -1483,9 +1934,157 @@ p11 <- youth_neet_heatmap %>% ggplot() +
 
 plot(p11)
 ```
+\newpage
+### ***12) Choropleth Map Displaying Youth NEET Rate Across the World Over Time***
 
+Creating new Data Frames required for the following Data Visualisation.
+```{r data modification 20, message=FALSE, warning=FALSE}
+#Cleaning the continents data set
+#Renaming columns to more consistent and simpler variable names
+continents_clean <- continents_data %>%
+  rename(
+    country = Entity,
+    code = Code, 
+    continent = Continent
+  )
 
+#Cleaning the Youth NEET data set
+#Renaming columns and simplifying the Youth NEET Rate variable name
+youth_neet_clean <- youth_neet %>%
+  rename(
+    country = Entity,
+    code = Code,
+    year = Year,
+    neet = Share.of.youth.not.in.education..employment.or.training..total....of.youth.population.
+  )
 
+# Joining Data Sets by Country Code (ISO3)
+# This adds continent information to each Youth NEET Rate observation
+neet_joined <- youth_neet_clean %>%
+  left_join(continents_clean, by = "code")
+
+# Selecting the required data columns
+neet_filtered <- neet_joined %>%
+  select(country = country.x, code, year, neet, continent) %>%
+  filter(!is.na(continent), continent != "Antarctica")
+```
+
+Visualising the Data to demonstrate the Annual Continental Youth NEET Rate over time.
+```{r data visualisation 17, message=FALSE, warning=FALSE}
+# Creating an Animated World Youth NEET Rate Choropleth Map
+# Using Plotly's Geographic Mapping
+# Gradient Key colours range from green (low Youth NEET Rate) to 
+# red (high Youth NEET Rate) to emphasise Youth NEET Rates across countries
+# Animation Frames differ by Year through a slider
+
+p17 <- plot_geo(neet_filtered, 
+                     locationmode = 'ISO-3', # Instructs map to use ISO3 codes
+                     frame = ~year # animation frames vary by year
+                     ) %>%
+  add_trace(
+    locations = ~code, #ISO3 codes required for mapping
+    z = ~neet,  # values to color countries by
+    zmin = min(neet_filtered$neet, na.rm = TRUE), #setting the scale of the lower bound
+    zmax = max(neet_filtered$neet, na.rm = TRUE), # setting the scale of the upper bound
+    colorscale = list(
+      c(0, 'limegreen'),  
+      c(1, 'red')      # vivid colors to emphasise differences between countries
+    ), 
+    color = ~neet, # ensuring colors are based on the Youth NEET Rate
+    text = ~paste(
+      country,
+      "<br>Continent:", continent,
+      "<br>NEET:", neet, "%"
+    ),
+    hoverinfo = 'text', # Ensures country information appears when hovering
+    marker = list(line = list(color = 'black', width = 0.5))
+    ) %>%
+  layout(
+  title = list(
+    text = "Youth NEET (%) Across the World Over Time <br><sup>NEET = Not in Education, Employment, or Training</sup>",
+    font = list(size = 20, color = 'black'),
+    y = 0.9) # Moves plot title slightly downwards
+)
+
+# *Note the Animated Choropleth Map constructed cannot be visualised in a pdf file
+```
+\newpage
+### ***13) Youth NEET Rate Over Time by Continent***
+
+Creating new Data Frames required for the following Data Visualisation.
+```{r data modification 21, message=FALSE, warning=FALSE}
+# Using simple mean as opposed to weighted mean due to limited population data
+# information
+continent_colors <- c(
+  "Africa" = "#FFA500",
+  "Asia" = "#FF0000",
+  "Europe" = "#de73ff",
+  "North America" = "#f64a8a",
+  "Oceania" = "#0496c7",
+  "South America" = "#c7ea46"
+)
+
+neet_by_continent <- neet_filtered %>%
+  group_by(continent, year) %>%
+  summarise(neet = mean(neet, na.rm = TRUE))
+```
+
+Visualising the Data to demonstrate the Youth NEET Rate over time by continent.
+```{r data visualisation 18, message=FALSE, warning=FALSE}
+p18 <- ggplot(neet_by_continent, aes(x = year, y = neet, colour = continent)) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 1.5) +
+  scale_colour_manual(values = continent_colors) +
+  theme_minimal() +
+  labs(
+    title = "Youth NEET Rate Over Time by Continent",
+    caption = 
+      "*Note Youth NEET = Youth Not in Education, Employment, or Training",
+    x = "Year",
+    y = "Youth NEET Rate (in %)",
+    colour = "Continent"
+  ) + 
+  
+   theme_minimal(13) +
+  
+  theme(
+    plot.background = element_rect(
+      fill = "#F9F9F9", color = NA
+    ), 
+    panel.background = element_rect(
+      fill = "#FFFFFF", color = NA
+    ),
+    panel.grid.major = element_line(
+      color = "#D9D9D9", size = 0.5
+    ),
+    panel.grid.minor = element_line(
+      color = "#EFEFEF", size = 0.25
+    ),
+    plot.title = element_text(
+      size = 12, face = "bold", hjust = 0.5
+    ),
+    plot.caption = element_text(
+      size = 7, hjust = 0
+    ),
+    axis.title.y = element_text(
+      size = 11, face = "bold"
+    ),
+    axis.title.x = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.position = "right",
+    legend.title = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.text = element_text(
+      size = 11
+    ) 
+  )
+
+plot(p18)
+```
+
+\newpage
 # The End
 
 Group Assignment by (GitHub usernames): Youssef Ahmed (YoussefAhmed103), Vijay Karthikeyan (Vjk-417), Yanxin Huang (yh4725), Annabel Chan (annabelchan79), and Arjun Kumar (ak4625)
