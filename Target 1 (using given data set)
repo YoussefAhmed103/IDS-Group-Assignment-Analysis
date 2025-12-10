@@ -1,4 +1,4 @@
-#Installing the necessary packages
+#Installing the neccessary packages
 library(tidyverse)
 library(janitor)
 library(ggplot2)
@@ -243,126 +243,70 @@ p2 <- ggplot(income_stats
 
 plot(p2)
 
-#Plot 3 
-
+#Plot 3
 group_growth <- comb_growth2 %>%
+  group_by(continent, year, ldc) %>%
+  summarise(mean_growth = mean(growth_rate, na.rm = TRUE), 
+            .groups = "drop")
 
-group_by(continent, year, ldc) %>%
+cont_total_growth <- group_growth %>% 
+  filter(!is.na(continent)) %>%
+  group_by(continent, year) %>%
+  summarise(total_growth = sum(mean_growth, na.rm = TRUE), .groups = "drop")
 
-summarise(weighted_growth = weighted.mean(growth_rate, na.rm = TRUE),
-
-.groups = "drop")
-
-
-cont_total_growth <- group_growth %>%
-
-filter(!is.na(continent)) %>%
-
-group_by(continent, year) %>%
-
-summarise(total_growth = sum(weighted_growth, na.rm = TRUE), .groups = "drop")
-
-
-p3 <- ggplot(group_growth %>% filter(!is.na(continent)),
-
-aes(x = year, y = weighted_growth, fill = ldc)) +
-
-
-geom_col(alpha = 0.85) +
-
-
-geom_line(data = cont_total_growth,
-
-aes(x = year, y = total_growth, group = continent),
-
-color = "black", linewidth = 1.1, inherit.aes = FALSE) +
-
-
-facet_wrap(~ continent, scales = "free_y") +
-
-
-labs(title = "Contribution of LDCs and Non-LDCs to GDP Per Capita Growth",
-
-subtitle = "█ Country Group Growth Rate — Total Growth Rate",
-
-x = "Year", y = "Contribution (%)", fill = "Country Group") +
-
+p3 <- ggplot(group_growth %>% filter(!is.na(continent)), 
+             aes(x = year, y = mean_growth, fill = ldc)) +
+  
+  geom_col(alpha = 0.85) +
+  
+  geom_line(data = cont_total_growth, 
+            aes(x = year, y = total_growth, group = continent), 
+            color = "black", linewidth = 1.1, inherit.aes = FALSE) + 
+  
+  facet_wrap(~ continent, scales = "free_y") +
+  
+  labs(title = "Contribution of LDCs and Non-LDCs to GDP Per Capita Growth", 
+       subtitle = "█ Country Group Growth Rate   — Total Growth Rate", 
+       x = "Year", y = "Mean Growth Rate (in %)", fill = "Country Group") +
 
 theme_minimal(13) +
-
-
-theme(
-
-plot.background = element_rect(
-
-fill = "#F9F9F9", color = NA
-
-),
-
-panel.background = element_rect(
-
-fill = "#FFFFFF", color = NA
-
-),
-
-panel.grid.major = element_line(
-
-color = "#D9D9D9", size = 0.5
-
-),
-
-panel.grid.minor = element_line(
-
-color = "#EFEFEF", size = 0.25
-
-),
-
-plot.title = element_text(
-
-size = 12, face = "bold", hjust = 0.5
-
-),
-
-plot.subtitle = element_text(
-
-size = 10, face = "bold", hjust = 0.5
-
-),
-
-plot.caption = element_text(
-
-size = 7, hjust = 0
-
-),
-
-axis.title.y = element_text(
-
-size = 11, face = "bold"
-
-),
-
-axis.title.x = element_text(
-
-size = 11, face = "bold"
-
-),
-
-legend.position = "right",
-
-legend.title = element_text(
-
-size = 11, face = "bold"
-
-),
-
-legend.text = element_text(
-
-size = 11
-
-)
-
-)
-
+  
+  theme(
+    plot.background = element_rect(
+      fill = "#F9F9F9", color = NA
+    ), 
+    panel.background = element_rect(
+      fill = "#FFFFFF", color = NA
+    ),
+    panel.grid.major = element_line(
+      color = "#D9D9D9", size = 0.5
+    ),
+    panel.grid.minor = element_line(
+      color = "#EFEFEF", size = 0.25
+    ),
+    plot.title = element_text(
+      size = 12, face = "bold", hjust = 0.5
+    ),
+    plot.subtitle = element_text(
+      size = 10, face = "bold", hjust = 0.5
+    ),
+    plot.caption = element_text(
+      size = 7, hjust = 0
+    ),
+    axis.title.y = element_text(
+      size = 11, face = "bold"
+    ),
+    axis.title.x = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.position = "bottom",
+    legend.title = element_text(
+      size = 11, face = "bold"
+    ),
+    legend.text = element_text(
+      size = 11
+    ) 
+  )
 
 plot(p3)
 
@@ -372,7 +316,8 @@ inc_group <- comb_growth2 %>%
   group_by(income_group, year) %>%
   summarise(mean_growth = mean(growth_rate, na.rm = TRUE), .groups = "drop")
 
-p4 <- ggplot(inc_group, aes(x = year, y = mean_growth)) +
+p4 <- ggplot(
+  inc_group %>% filter(income_group != ''), aes(x = year, y = mean_growth)) +
   
   geom_line(linewidth = 0.7, color = "black") +
   
