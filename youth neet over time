@@ -2,7 +2,7 @@
 #------------------------------------------------------------------
 ### Task 1: Plotting a map graph for youth NEET across countries over time
 #------------------------------------------------------------------
-# setting up by loading up required libraries
+# setting up by loading up required libraries 
 library(plotly)
 library(dplyr)
 library(readr)
